@@ -44,18 +44,22 @@ class Config(object):
     #  }
     # }
 
+    @staticmethod
     def normalize(name):
         return re.sub(r"[^\w\s]", "_", name.lower())
 
+    @staticmethod
     def canonical_group_name(group):
         return "-".join(sorted(list(map(Config.normalize, group))))
 
+    @staticmethod
     def group2repo(cname, aname, group, format_string="{}{}-{}"):
         cname2 = Config.normalize(cname)
         aname2 = Config.normalize(aname)
         gname = Config.canonical_group_name(group)
         return format_string.format(cname2, aname2, gname)
 
+    @staticmethod
     # stolen from: https://gist.github.com/hanleybrand/5224673
     def java_string_hashcode(s):
         h = 0
