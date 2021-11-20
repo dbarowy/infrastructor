@@ -1,9 +1,11 @@
-import sys
+# import sys
 import argparse
 
 if __name__ == "__main__":
 
-    parser = argparse.ArgumentParser(description='Compare one student list against an authoritative list; identify missing and extraneous student IDs')
+    parser = argparse.ArgumentParser(
+        description='Compare one student list against an authoritative list; '
+                    'identify missing and extraneous student IDs')
     parser.add_argument('authoritative_list', type=str,
                         help='file name for complete list of students')
     parser.add_argument('test_list', type=str,
@@ -21,7 +23,7 @@ if __name__ == "__main__":
         for line in fin:
             names.extend(line.strip().split(","))
     names = [name.casefold() for name in names]
-    unique = set(names)    
+    unique = set(names)
     duplicates = [name.casefold() for name in names if names.count(name) > 1]
     print("There are {} unique student names in {}:".format(len(unique),
                                                             args.test_list))

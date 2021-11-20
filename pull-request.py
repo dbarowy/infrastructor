@@ -1,18 +1,24 @@
 #!/usr/bin/env python
 
 import sys
+from typing import List, Tuple
+
 from config import Config
 from github import Github
 
-def usage(pname):
-        print("Usage: {} <github username> <github password> <repository name> <config.json>".format(pname))
 
-def parse_args(args):
+def usage(pname: str):
+    print("Usage: {} <github username> <github password> <repository name> "
+          "<config.json>".format(pname))
+
+
+def parse_args(args: List[str]) -> Tuple[str, str, str, str]:
     if len(args) != 5:
         usage(args[0])
         sys.exit(1)
     else:
-        return (args[1], args[2], args[3], args[4])
+        return args[1], args[2], args[3], args[4]
+
 
 def main():
     # get config
@@ -28,6 +34,7 @@ def main():
 
     # issue pull request for given repo
     conf.issue_pull_request(repo, org)
+
 
 if __name__ == "__main__":
     main()
