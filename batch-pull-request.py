@@ -1,16 +1,18 @@
 #!/usr/bin/env python
 
 import sys
-from config import Config
+from typing import Sequence, Tuple
+
 from github import Github
 
-
-def usage(pname):
-    print("Usage: {} <github username> <github password> <config.json>".format(
-        pname))
+from config import Config
 
 
-def parse_args(args):
+def usage(pname: str):
+    print(f"Usage: {pname} <github username> <github password> <config.json>")
+
+
+def parse_args(args: Sequence[str]) -> Tuple[str, str, str]:
     if len(args) != 4:
         usage(args[0])
         sys.exit(1)
@@ -34,10 +36,10 @@ def main():
         # get submissions dir path for repo
         rdir = conf.pull_path(basepath, repo, False, conf.anonymize_sub_path)
         if not conf.branch_exists(rdir):
-            print("No feedback branch for {}".format(rdir))
+            print(f"No feedback branch for {rdir}")
             continue
         # issue pull request for given repo
-        print("issuing pull request for {}".format(rdir))
+        print(f"issuing pull request for {rdir}")
         conf.issue_pull_request(rdir, org)
 
 

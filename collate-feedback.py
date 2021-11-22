@@ -1,13 +1,13 @@
 #!/usr/bin/env python
 
 import argparse
-import sys
 import os
+import sys
+
 from config import Config
-# from github import Github
 
 
-def dump_file(fname):
+def dump_file(fname: str):
     with open(fname, 'r') as fin:
         for line in fin:
             print(line, end='')
@@ -47,10 +47,10 @@ def main():
         #     continue
 
         # dump username and README.md contents to stdout
-        print("# BEGIN {} FEEDBACK".format(student))
-        print("__({})__".format(rdir))
+        print(f"# BEGIN {student} FEEDBACK")
+        print(f"__({rdir})__")
         dump_file(os.path.join(rdir, args.feedback_file))
-        print("## END {} FEEDBACK".format(student))
+        print(f"## END {student} FEEDBACK")
         print("\n\n")
 
 

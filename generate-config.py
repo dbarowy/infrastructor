@@ -1,20 +1,20 @@
 #!/usr/bin/env python
 
-import sys
 import json
-# import re
-import random
 import os.path
+import random
+import sys
+from typing import Sequence, Tuple, List, Dict
+
 from config import Config
-# from github import Github
 
 
-def usage(pname):
-    print("Usage: {} <student name file> <base config template>".format(pname))
+def usage(pname: str):
+    print(f"Usage: {pname} <student name file> <base config template>")
     print("\t>> prints the contents of a config file to standard out.")
 
 
-def config(args):
+def config(args: Sequence[str]) -> Tuple[str, str]:
     if len(args) != 3:
         pname = os.path.basename(args[0])
         usage(pname)
@@ -32,7 +32,7 @@ def main():
     random.seed(seed)
 
     # read student names from input file
-    groups = []
+    groups: List[List[str]] = []
     f = open(sfile)
     for line in f:
         group = line.rstrip().split(",")
@@ -43,7 +43,7 @@ def main():
     random.shuffle(groups)
 
     # pair students with repositories
-    repo_map = {}
+    repo_map: Dict[str, str] = {}
     for group in groups:
         # synthesize repo name
         repo = Config.group2repo(

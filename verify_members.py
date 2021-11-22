@@ -1,17 +1,17 @@
 #!/usr/bin/env python
 
 import sys
-# from config import Config
+from typing import Tuple, Sequence
+
 from github import Github
 
 
-def usage(pname):
-    print(
-        "Usage: {} <github username> <github password> <org name> "
-        "<student_file>".format(pname))
+def usage(pname: str):
+    print(f"Usage: {pname} <github username> <github password> "
+          f"<org name> <student_file>")
 
 
-def parse_args(args):
+def parse_args(args: Sequence[str]) -> Tuple[str, str, str, str]:
     if len(args) != 5:
         usage(args[0])
         sys.exit(1)
@@ -34,7 +34,7 @@ def main():
         try:
             s = g.get_user(student)
         except Exception:
-            # print("{} not a github member.".format(student))
+            # print(f"{student} not a github member.")
             non_github.append(student)
 
     org = g.get_organization("williams-cs")
@@ -43,12 +43,12 @@ def main():
     non_org = []
     for student in students:
         if student not in members:
-            # print("{} not a member of {}.".format(student, orgname))
+            # print(f"{student} not a member of {orgname}.")
             non_org.append(student)
 
     print("Not in github:")
     print(non_github)
-    print("Not in {}:".format(orgname))
+    print(f"Not in {orgname}:")
     print(non_org)
 
 

@@ -1,18 +1,19 @@
 #!/usr/bin/env python
 
 import sys
-from typing import List, Tuple
+from typing import Tuple, Sequence
+
+from github import Github
 
 from config import Config
-from github import Github
 
 
 def usage(pname: str):
-    print("Usage: {} <github username> <github password> <repository name> "
-          "<config.json>".format(pname))
+    print(f"Usage: {pname} <github username> <github password> "
+          f"<repository name> <config.json>")
 
 
-def parse_args(args: List[str]) -> Tuple[str, str, str, str]:
+def parse_args(args: Sequence[str]) -> Tuple[str, str, str, str]:
     if len(args) != 5:
         usage(args[0])
         sys.exit(1)

@@ -1,5 +1,5 @@
-# import sys
 import argparse
+from typing import Set, List
 
 if __name__ == "__main__":
 
@@ -13,20 +13,19 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    allnames = set()
+    allnames: Set[str] = set()
     with open(args.authoritative_list, "r") as fin:
         for line in fin:
             allnames.add(line.strip().casefold())
 
-    names = []
+    names: List[str] = []
     with open(args.test_list, "r") as fin:
         for line in fin:
             names.extend(line.strip().split(","))
     names = [name.casefold() for name in names]
-    unique = set(names)
+    unique: Set[str] = set(names)
     duplicates = [name.casefold() for name in names if names.count(name) > 1]
-    print("There are {} unique student names in {}:".format(len(unique),
-                                                            args.test_list))
+    print(f"There are {len(unique)} unique student names in {args.test_list}:")
     print(names)
     print("missing students: ")
     missing = allnames - unique

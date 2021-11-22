@@ -1,13 +1,14 @@
 #!/usr/bin/env python
 
 import argparse
-import sys
 import os
 import subprocess
+import sys
+
 from config import Config
 
 
-def dump_file(fname):
+def dump_file(fname: str):
     with open(fname, 'r') as fin:
         for line in fin:
             print(line, end='')
@@ -36,7 +37,7 @@ def main():
     basepath = conf.ta_path
     for repo in conf.repositories():
         ta_dir = conf.TA_target(conf.ta_path, conf.assignment_name, repo)
-        print("{}: {}".format(repo, ta_dir))
+        print(f"{repo}: {ta_dir}")
         with subprocess.Popen(args=args.command.split(),
                               stdout=subprocess.PIPE,
                               stderr=subprocess.STDOUT,

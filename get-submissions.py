@@ -1,8 +1,9 @@
 #!/usr/bin/env python
 
 import sys
-from config import Config
 from subprocess import call
+
+from config import Config
 
 
 def main():
@@ -22,7 +23,7 @@ def main():
     call(["chmod", "-R", "2770", conf.submission_path])
 
     ## in group permissions in TA directory ... ##
-    ta = "%s/%s" % (conf.ta_path, conf.assignment_name)
+    ta = f"{conf.ta_path}/{conf.assignment_name}"
     call(["chmod", "-R", "2770", ta])
 
 
