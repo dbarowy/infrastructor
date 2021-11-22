@@ -5,7 +5,7 @@ import sys
 from config import Config
 
 
-def main():
+def main() -> None:
     # get config
     conf = Config(sys.argv)
 

@@ -7,13 +7,13 @@ import sys
 from config import Config
 
 
-def dump_file(fname: str):
+def dump_file(fname: str) -> None:
     with open(fname, 'r') as fin:
         for line in fin:
             print(line, end='')
 
 
-def main():
+def main() -> None:
     # get config
     parser = argparse.ArgumentParser(
         description='collect the contents of all README.md files into one '

@@ -9,7 +9,7 @@ from typing import Sequence, Tuple, List, Dict
 from config import Config
 
 
-def usage(pname: str):
+def usage(pname: str) -> None:
     print(f"Usage: {pname} <student name file> <base config template>")
     print("\t>> prints the contents of a config file to standard out.")
 
@@ -22,7 +22,7 @@ def config(args: Sequence[str]) -> Tuple[str, str]:
     return args[1], args[2]
 
 
-def main():
+def main() -> None:
     (sfile, base_config) = config(sys.argv)
     with open(base_config, 'r') as f:
         conf = json.load(f)

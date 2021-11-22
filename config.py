@@ -8,13 +8,19 @@ import re
 import sys
 from distutils import spawn
 from subprocess import call, Popen, PIPE
-from typing import Dict, List, Sequence
+from typing import Any, Dict, List, Sequence, TypeVar
 
+import requests
 from github.Organization import Organization
 
 
+# Generics for type hints in merge_dicts()
+_KT = TypeVar("_KT")
+_VT = TypeVar("_VT")
+
+
 # this makes a copy
-def merge_dicts(base_dict, update_with):
+def merge_dicts(base_dict: Dict[_KT, _VT], update_with: Dict[_KT, _VT]) -> Dict[_KT, _VT]:
     d = {}
     d.update(base_dict)
     d.update(update_with)
@@ -53,7 +59,7 @@ class Config(object):
         return "-".join(sorted(list(map(Config.normalize, group))))
 
     @staticmethod
-    def group2repo(cname, aname, group, format_string="{}{}-{}"):
+    def group2repo(cname: str, aname: str, group: Sequence[str], format_string: str = "{}{}-{}") -> str:
         cname2 = Config.normalize(cname)
         aname2 = Config.normalize(aname)
         gname = Config.canonical_group_name(group)
@@ -68,19 +74,19 @@ class Config(object):
         return ((h + 0x80000000) & 0xFFFFFFFF) - 0x80000000
 
     @staticmethod
-    def usage(pname):
+    def usage(pname: str) -> None:
         print(f"Usage: {pname} [flags] <json config file>", file=sys.stderr)
         print("\twhere flags are:", file=sys.stderr)
         print("\t-v\tverbose mode; print debug output.", file=sys.stderr)
 
-    def argparse(self, args):
+    def argparse(self, args: Sequence[str]) -> Dict[str, bool]:
         pname = os.path.basename(args[0])
         # convert to list and strip program name
         xs = list(args)
         tail = args[1:]
         return self.rec_argparse(tail, pname)
 
-    def rec_argparse(self, args, pname):
+    def rec_argparse(self, args: Sequence[str], pname: str) -> Dict[str, Any]:
         flags = {
             "-v": lambda: {"verbose": True}
         }
@@ -107,7 +113,7 @@ class Config(object):
                 self.usage(pname)
                 sys.exit(1)
 
-    def __init__(self, args):
+    def __init__(self, args: Sequence[str]):
         print(args)
         # self check
         self.self_check()
@@ -121,32 +127,32 @@ class Config(object):
             conf = json.loads(f.read())
 
         # declare/init fields
-        self.hostname = conf["hostname"]
-        self.verbose = opts["verbose"]
-        self.user2repo = {}
+        self.hostname: str = conf["hostname"]
+        self.verbose: bool = opts["verbose"]
+        self.user2repo: Dict[str, str] = {}
         self.repo2group: Dict[str, List[str]] = {}
         self.ta_assignments = {}
-        self.course = conf["course"]
+        self.course: str = conf["course"]
         self.assignment_name: str = conf["assignment_name"]
-        self.starter_repo = conf["starter_repo"]
-        self.github_org = conf["github_org"]
-        self.archive_path = conf["archive_path"]
-        self.submission_path = conf["submission_path"]
+        self.starter_repo: str = conf["starter_repo"]
+        self.github_org: str = conf["github_org"]
+        self.archive_path: str = conf["archive_path"]
+        self.submission_path: str = conf["submission_path"]
         self.ta_path: str = conf["ta_path"]
-        self.feedback_branch = conf["feedback_branch"]
+        self.feedback_branch: str = conf["feedback_branch"]
         if "do_not_accept_changes_after_due_date_timestamp" in conf:
             self.due_date = conf[
                 "do_not_accept_changes_after_due_date_timestamp"]
-        self.anonymize_sub_path = conf[
+        self.anonymize_sub_path: bool = conf[
             "anonymize_sub_path"] if "anonymize_sub_path" in conf else True
-        self.rsync_excludes = conf["rsync_excludes"]
+        self.rsync_excludes: List[str] = conf["rsync_excludes"]
 
         # populate mappings (user2repo, repo2group)
         for student in conf["repository_map"].keys():
             self.add_mapping(student, conf["repository_map"][student])
 
         # read TA list
-        tas = conf["TAs"]
+        tas: List[str] = conf["TAs"]
         tas.sort()  # sorting ensures that TA order is deterministic
 
         # generate TA map
@@ -156,7 +162,7 @@ class Config(object):
         self.ta_assignments = self.round_robin_map(tas, repos)
 
     @staticmethod
-    def self_check():
+    def self_check() -> None:
         if spawn.find_executable("rsync") is None:
             print("ERROR: Cannot find rsync.", file=sys.stderr)
             sys.exit(1)
@@ -166,9 +172,9 @@ class Config(object):
             sys.exit(1)
 
     @staticmethod
-    def round_robin_map(tas, repos):
+    def round_robin_map(tas: Sequence[str], repos: Sequence[str]) -> Dict[str, str]:
         i = 0  # index into tas
-        d = {}  # map
+        d: Dict[str, str] = {}  # map
 
         for r in repos:
             # assign TA to repository
@@ -181,10 +187,10 @@ class Config(object):
 
         return d
 
-    def list_of_users(self):
+    def list_of_users(self) -> List[str]:
         return list(self.user2repo.keys())
 
-    def add_mapping(self, user, repo):
+    def add_mapping(self, user: str, repo: str) -> None:
         # pair user with repo
         self.user2repo[user] = repo
 
@@ -193,18 +199,18 @@ class Config(object):
         if repo in self.repo2group:
             # yes, so get existing group and add user
             group = self.repo2group[repo]
-            group = group.append(user)
+            group.append(user)
         else:
             # no, so add repo and new group from user
             self.repo2group[repo] = [user]
 
-    def lookupGroup(self, repo) -> List[str]:
+    def lookupGroup(self, repo: str) -> List[str]:
         return self.repo2group[repo]
 
-    def lookupRepo(self, user):
+    def lookupRepo(self, user: str) -> str:
         return self.user2repo[user]
 
-    def pretty_print(self):
+    def pretty_print(self) -> None:
         print("Student -> repository map:")
         for user in self.user2repo.keys():
             print(f"  {user} -> {self.user2repo[user]}")
@@ -234,7 +240,7 @@ class Config(object):
         # return "git@" + self.hostname + ":" + self.github_org + "/" + repo + ".git"
         return f"git@{self.hostname}:{self.github_org}/{repo}.git"
 
-    def lookupTA(self, repo):
+    def lookupTA(self, repo: str) -> str:
         return self.ta_assignments[repo]
 
     def pull_path(self, basepath: str, repo: str, use_user_name: bool,
@@ -256,7 +262,7 @@ class Config(object):
         return os.path.join(ta_home, ta_dirname, self.lookupTA(repo),
                             hashlib.sha1(repo.encode('utf-8')).hexdigest())
 
-    def pull_all(self, basepath, use_user_name: bool, anonymize: bool):
+    def pull_all(self, basepath: str, use_user_name: bool, anonymize: bool) -> None:
         # pull all repositories into archive and submission dirs
         for repo in self.repositories():
             rpath = self.pull_path(basepath, repo, use_user_name, anonymize)
@@ -287,7 +293,7 @@ class Config(object):
                        pathspec],
                       cwd=rpath).wait()  # note: blocking
 
-    def push_starter(self):
+    def push_starter(self) -> None:
         print(f"starter repo is: {self.starter_repo}")
         for repo in self.repositories():
             actual_repo = self.repo_ssh_path(repo)
@@ -296,7 +302,7 @@ class Config(object):
             Popen(["git", "push", repo, "master"],
                   cwd=self.starter_repo).wait()
 
-    def copy_to_ta_folders(self, ta_home, ta_dirname, basepath):
+    def copy_to_ta_folders(self, ta_home: str, ta_dirname: str, basepath: str) -> None:
         # keep track of repository -> TA map and print out the key
         # after doing all of the copying
         ta_map = []
@@ -328,7 +334,7 @@ class Config(object):
         for (repo, target) in ta_map:
             print(repo + " -> " + target)
 
-    def copy_from_ta_folders(self, ta_home, ta_dirname, basepath):
+    def copy_from_ta_folders(self, ta_home: str, ta_dirname: str, basepath: str) -> None:
         # cp all files except git stuff
         for repo in self.repositories():
             # compute target
@@ -368,7 +374,7 @@ class Config(object):
         proc.communicate()  # note: blocking; don't care about output
         return proc.returncode == 0
 
-    def commit_changes(self, basepath):
+    def commit_changes(self, basepath: str) -> None:
         for repo in self.repositories():
             # get submissions dir path for repo
             rdir = self.pull_path(basepath, repo, False,
@@ -394,7 +400,7 @@ class Config(object):
 
     # yeah, we brute force these...
     # fortunately, there aren't many to check
-    def deanonymize_sha1_repo(self, anonrepo) -> str:
+    def deanonymize_sha1_repo(self, anonrepo: str) -> str:
         for repo in self.repo2group.keys():
             utf8_repo = repo.encode('utf-8')
             repohash = hashlib.sha1(utf8_repo).hexdigest()

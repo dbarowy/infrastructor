@@ -8,7 +8,7 @@ from github import Github
 from config import Config
 
 
-def usage(pname: str):
+def usage(pname: str) -> None:
     print(f"Usage: {pname} <github username> <github password> <config.json>")
 
 
@@ -20,7 +20,7 @@ def parse_args(args: Sequence[str]) -> Tuple[str, str, str]:
         return args[1], args[2], args[3]
 
 
-def main():
+def main() -> None:
     # get config
     user, passwd, cfile = parse_args(sys.argv)
     conf = Config([sys.argv[0], cfile])

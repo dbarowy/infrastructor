@@ -6,7 +6,7 @@ from typing import Tuple, Sequence
 from github import Github
 
 
-def usage(pname: str):
+def usage(pname: str) -> None:
     print(f"Usage: {pname} <github username> <github password> "
           f"<org name> <student_file>")
 
@@ -19,7 +19,7 @@ def parse_args(args: Sequence[str]) -> Tuple[str, str, str, str]:
         return args[1], args[2], args[3], args[4]
 
 
-def main():
+def main() -> None:
     # get config
     user, passwd, orgname, sfile = parse_args(sys.argv)
 

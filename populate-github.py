@@ -17,7 +17,7 @@ class CannotAddUserToRepo(Exception):
     pass
 
 
-def usage(pname: str):
+def usage(pname: str) -> None:
     print(f"Usage: {pname} <github username> <github password> "
           f"<json config file>")
 
@@ -30,7 +30,7 @@ def config(args: Sequence[str]) -> Tuple[str, str, str]:
     return args[1], args[2], args[3]
 
 
-def main():
+def main() -> None:
     (user, password, conf_file) = config(sys.argv)
 
     # Read in json config (generated with generate_config.py)
@@ -46,7 +46,7 @@ def main():
 
     # connect to github
     g = Github(user, password)
-    guser = g.get_user()
+    # guser = g.get_user()
     org = g.get_organization("williams-cs")
 
     for repo_name, group in conf.repo2group.items():

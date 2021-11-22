@@ -6,7 +6,7 @@ from subprocess import call
 from config import Config
 
 
-def main():
+def main() -> None:
     # get config
     conf = Config(sys.argv)
     conf.pretty_print()

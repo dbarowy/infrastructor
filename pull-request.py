@@ -8,7 +8,7 @@ from github import Github
 from config import Config
 
 
-def usage(pname: str):
+def usage(pname: str) -> None:
     print(f"Usage: {pname} <github username> <github password> "
           f"<repository name> <config.json>")
 
@@ -21,14 +21,14 @@ def parse_args(args: Sequence[str]) -> Tuple[str, str, str, str]:
         return args[1], args[2], args[3], args[4]
 
 
-def main():
+def main() -> None:
     # get config
     user, passwd, repo, cfile = parse_args(sys.argv)
     conf = Config([sys.argv[0], cfile])
 
     # init Github SDK
     g = Github(user, passwd)
-    guser = g.get_user()
+    # guser = g.get_user()
     org = g.get_organization("williams-cs")
 
     # TODO: verify that local repo is on the correct branch
