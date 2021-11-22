@@ -79,7 +79,7 @@ class Config(object):
         print("\twhere flags are:", file=sys.stderr)
         print("\t-v\tverbose mode; print debug output.", file=sys.stderr)
 
-    def argparse(self, args: Sequence[str]) -> Dict[str, bool]:
+    def argparse(self, args: Sequence[str]) -> Dict[str, Any]:
         pname = os.path.basename(args[0])
         # convert to list and strip program name
         xs = list(args)
@@ -131,7 +131,7 @@ class Config(object):
         self.verbose: bool = opts["verbose"]
         self.user2repo: Dict[str, str] = {}
         self.repo2group: Dict[str, List[str]] = {}
-        self.ta_assignments = {}
+        self.ta_assignments: Dict[str, str] = {}
         self.course: str = conf["course"]
         self.assignment_name: str = conf["assignment_name"]
         self.starter_repo: str = conf["starter_repo"]
