@@ -1,9 +1,6 @@
 #!/usr/bin/env python
 
 import sys
-# import json
-# import re
-# import random
 import os.path
 import time
 from typing import Sequence, Tuple
@@ -12,10 +9,8 @@ from config import Config
 from github import Github
 from github import GithubException
 
-
 class CannotAddUserToRepo(Exception):
     pass
-
 
 def usage(pname: str) -> None:
     print(f"Usage: {pname} <github username> <github password> "
@@ -33,20 +28,11 @@ def config(args: Sequence[str]) -> Tuple[str, str, str]:
 def main() -> None:
     (user, password, conf_file) = config(sys.argv)
 
-    # Read in json config (generated with generate_config.py)
-    # with open(conf_file, 'r') as f:
-    #     conf_json = json.load(f)
-
-    # # seed RNG based on assignment name
-    # seed = Config.java_string_hashcode(conf.assignment_name)
-    # random.seed(seed)
-
     conf = Config([sys.argv[0], conf_file])
     conf.pretty_print()
 
     # connect to github
     g = Github(user, password)
-    # guser = g.get_user()
     org = g.get_organization("williams-cs")
 
     for repo_name, group in conf.repo2group.items():
