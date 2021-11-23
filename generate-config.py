@@ -1,26 +1,29 @@
 #!/usr/bin/env python
 
-import sys
 import json
-import re
-import random
 import os.path
+import random
+import sys
+from typing import Sequence, Tuple, List, Dict
+
 from config import Config
-from github import Github
 
-def usage(pname):
-        print("Usage: {} <student name file> <base config template>".format(pname))
-        print("\t>> prints the contents of a config file to standard out.")
 
-def config(args):
+def usage(pname: str) -> None:
+    print(f"Usage: {pname} <student name file> <base config template>")
+    print("\t>> prints the contents of a config file to standard out.")
+
+
+def config(args: Sequence[str]) -> Tuple[str, str]:
     if len(args) != 3:
         pname = os.path.basename(args[0])
         usage(pname)
         sys.exit(1)
-    return (args[1], args[2])
+    return args[1], args[2]
 
-def main():
-    (sfile,base_config) = config(sys.argv)
+
+def main() -> None:
+    (sfile, base_config) = config(sys.argv)
     with open(base_config, 'r') as f:
         conf = json.load(f)
 
@@ -29,7 +32,7 @@ def main():
     random.seed(seed)
 
     # read student names from input file
-    groups = []
+    groups: List[List[str]] = []
     f = open(sfile)
     for line in f:
         group = line.rstrip().split(",")
@@ -40,10 +43,11 @@ def main():
     random.shuffle(groups)
 
     # pair students with repositories
-    repo_map = {}
+    repo_map: Dict[str, str] = {}
     for group in groups:
         # synthesize repo name
-        repo = Config.group2repo(conf["course"], conf["assignment_name"], group)
+        repo = Config.group2repo(
+            conf["course"], conf["assignment_name"], group)
         for student in group:
             # add pairing to json
             repo_map[student] = repo
@@ -52,6 +56,7 @@ def main():
     conf["repository_map"] = repo_map
 
     print(json.dumps(conf, indent=4, sort_keys=True))
+
 
 if __name__ == "__main__":
     main()

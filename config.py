@@ -1,25 +1,31 @@
-
-
-import errno
-import sys
-import os.path
-import re
-import random
-import json
-import hashlib
 import datetime
-from subprocess import call, Popen, PIPE
-from shutil import copyfile
+import errno
+import hashlib
+import json
+import os.path
+import random
+import re
+import sys
 from distutils import spawn
-from optparse import OptionParser
-from github import Github
+from subprocess import call, Popen, PIPE
+from typing import Any, Dict, List, Sequence, TypeVar
+
+import requests
+from github.Organization import Organization
+
+
+# Generics for type hints in merge_dicts()
+_KT = TypeVar("_KT")
+_VT = TypeVar("_VT")
+
 
 # this makes a copy
-def merge_dicts(base_dict, update_with):
+def merge_dicts(base_dict: Dict[_KT, _VT], update_with: Dict[_KT, _VT]) -> Dict[_KT, _VT]:
     d = {}
     d.update(base_dict)
     d.update(update_with)
     return d
+
 
 class Config(object):
     # config JSON
@@ -44,41 +50,45 @@ class Config(object):
     #  }
     # }
 
-    def normalize(name):
+    @staticmethod
+    def normalize(name: str) -> str:
         return re.sub(r"[^\w\s]", "_", name.lower())
 
-    def canonical_group_name(group):
+    @staticmethod
+    def canonical_group_name(group: Sequence[str]) -> str:
         return "-".join(sorted(list(map(Config.normalize, group))))
 
-    def group2repo(cname, aname, group, format_string="{}{}-{}"):
+    @staticmethod
+    def group2repo(cname: str, aname: str, group: Sequence[str], format_string: str = "{}{}-{}") -> str:
         cname2 = Config.normalize(cname)
         aname2 = Config.normalize(aname)
         gname = Config.canonical_group_name(group)
         return format_string.format(cname2, aname2, gname)
 
+    @staticmethod
     # stolen from: https://gist.github.com/hanleybrand/5224673
-    def java_string_hashcode(s):
+    def java_string_hashcode(s: str) -> int:
         h = 0
         for c in s:
             h = (31 * h + ord(c)) & 0xFFFFFFFF
         return ((h + 0x80000000) & 0xFFFFFFFF) - 0x80000000
 
-    def usage(self, pname):
-        print("Usage: {0} [flags] <json config file>".format(pname),
-              file=sys.stderr)
+    @staticmethod
+    def usage(pname: str) -> None:
+        print(f"Usage: {pname} [flags] <json config file>", file=sys.stderr)
         print("\twhere flags are:", file=sys.stderr)
         print("\t-v\tverbose mode; print debug output.", file=sys.stderr)
 
-    def argparse(self, args):
+    def argparse(self, args: Sequence[str]) -> Dict[str, Any]:
         pname = os.path.basename(args[0])
         # convert to list and strip program name
         xs = list(args)
         tail = args[1:]
         return self.rec_argparse(tail, pname)
 
-    def rec_argparse(self, args, pname):
+    def rec_argparse(self, args: Sequence[str], pname: str) -> Dict[str, Any]:
         flags = {
-            "-v" : lambda: { "verbose" : True }
+            "-v": lambda: {"verbose": True}
         }
 
         # base case 1: zero-length string
@@ -89,8 +99,8 @@ class Config(object):
         # base case 2: string has one (positional) argument left
         if len(args) == 1:
             return {
-                "json_conf_file" : args[0],
-                "verbose" : False
+                "json_conf_file": args[0],
+                "verbose": False
             }
         # recursive case: optional flags remain
         else:
@@ -99,11 +109,11 @@ class Config(object):
                 head, tail = args[0], args[1:]
                 d = flags[head]()
                 return merge_dicts(self.rec_argparse(tail, pname), d)
-            except:
+            except Exception:
                 self.usage(pname)
                 sys.exit(1)
 
-    def __init__(self, args):
+    def __init__(self, args: Sequence[str]):
         print(args)
         # self check
         self.self_check()
@@ -117,30 +127,32 @@ class Config(object):
             conf = json.loads(f.read())
 
         # declare/init fields
-        self.hostname = conf["hostname"]
-        self.verbose = opts["verbose"]
-        self.user2repo = {}
-        self.repo2group = {}
-        self.ta_assignments = {}
-        self.course = conf["course"]
-        self.assignment_name = conf["assignment_name"]
-        self.starter_repo = conf["starter_repo"]
-        self.github_org = conf["github_org"]
-        self.archive_path = conf["archive_path"]
-        self.submission_path = conf["submission_path"]
-        self.ta_path = conf["ta_path"]
-        self.feedback_branch = conf["feedback_branch"]
+        self.hostname: str = conf["hostname"]
+        self.verbose: bool = opts["verbose"]
+        self.user2repo: Dict[str, str] = {}
+        self.repo2group: Dict[str, List[str]] = {}
+        self.ta_assignments: Dict[str, str] = {}
+        self.course: str = conf["course"]
+        self.assignment_name: str = conf["assignment_name"]
+        self.starter_repo: str = conf["starter_repo"]
+        self.github_org: str = conf["github_org"]
+        self.archive_path: str = conf["archive_path"]
+        self.submission_path: str = conf["submission_path"]
+        self.ta_path: str = conf["ta_path"]
+        self.feedback_branch: str = conf["feedback_branch"]
         if "do_not_accept_changes_after_due_date_timestamp" in conf:
-            self.due_date = conf["do_not_accept_changes_after_due_date_timestamp"]
-        self.anonymize_sub_path = conf["anonymize_sub_path"] if "anonymize_sub_path" in conf else True
-        self.rsync_excludes = conf["rsync_excludes"]
+            self.due_date = conf[
+                "do_not_accept_changes_after_due_date_timestamp"]
+        self.anonymize_sub_path: bool = conf[
+            "anonymize_sub_path"] if "anonymize_sub_path" in conf else True
+        self.rsync_excludes: List[str] = conf["rsync_excludes"]
 
         # populate mappings (user2repo, repo2group)
         for student in conf["repository_map"].keys():
             self.add_mapping(student, conf["repository_map"][student])
 
         # read TA list
-        tas = conf["TAs"]
+        tas: List[str] = conf["TAs"]
         tas.sort()  # sorting ensures that TA order is deterministic
 
         # generate TA map
@@ -149,18 +161,20 @@ class Config(object):
         random.shuffle(repos)
         self.ta_assignments = self.round_robin_map(tas, repos)
 
-    def self_check(self):
-        if spawn.find_executable("rsync") == None:
+    @staticmethod
+    def self_check() -> None:
+        if spawn.find_executable("rsync") is None:
             print("ERROR: Cannot find rsync.", file=sys.stderr)
             sys.exit(1)
 
-        if spawn.find_executable("git") == None:
+        if spawn.find_executable("git") is None:
             print("ERROR: Cannot find git.", file=sys.stderr)
             sys.exit(1)
 
-    def round_robin_map(self, tas, repos):
+    @staticmethod
+    def round_robin_map(tas: Sequence[str], repos: Sequence[str]) -> Dict[str, str]:
         i = 0  # index into tas
-        d = {} # map
+        d: Dict[str, str] = {}  # map
 
         for r in repos:
             # assign TA to repository
@@ -173,10 +187,10 @@ class Config(object):
 
         return d
 
-    def list_of_users(self):
+    def list_of_users(self) -> List[str]:
         return list(self.user2repo.keys())
 
-    def add_mapping(self, user, repo):
+    def add_mapping(self, user: str, repo: str) -> None:
         # pair user with repo
         self.user2repo[user] = repo
 
@@ -185,50 +199,56 @@ class Config(object):
         if repo in self.repo2group:
             # yes, so get existing group and add user
             group = self.repo2group[repo]
-            group = group.append(user)
+            group.append(user)
         else:
             # no, so add repo and new group from user
             self.repo2group[repo] = [user]
 
-    def lookupGroup(self, repo):
+    def lookupGroup(self, repo: str) -> List[str]:
         return self.repo2group[repo]
 
-    def lookupRepo(self, user):
+    def lookupRepo(self, user: str) -> str:
         return self.user2repo[user]
 
-    def pretty_print(self):
+    def pretty_print(self) -> None:
         print("Student -> repository map:")
         for user in self.user2repo.keys():
-            print("  {} -> {}".format(user, self.user2repo[user]))
+            print(f"  {user} -> {self.user2repo[user]}")
 
         print("TA -> repository map:")
         for repo in self.ta_assignments.keys():
-            print("  {} -> {}".format(self.ta_assignments[repo],repo))
+            print(f"  {self.ta_assignments[repo]} -> {repo}")
 
-        print("archive path: {}".format(self.archive_path))
-        print("submission path: {}".format(self.submission_path))
-        print("ta path: {}".format(self.ta_path))
-        print("course: {}".format(self.course))
-        print("assignment name: {}".format(self.assignment_name))
+        print(f"archive path: {self.archive_path}")
+        print(f"submission path: {self.submission_path}")
+        print(f"ta path: {self.ta_path}")
+        print(f"course: {self.course}")
+        print(f"assignment name: {self.assignment_name}")
         if hasattr(self, "do_not_accept_changes_after_due_date_timestamp"):
-            print("due date: {}".format(datetime.datetime.fromtimestamp(int(self.due_date)).strftime('%Y-%m-%d %H:%M:%S')))
-        print("feedback branch: {}".format(self.feedback_branch))
+            print(f"""due date: {
+            datetime.datetime.fromtimestamp(int(self.due_date))
+                  .strftime('%Y-%m-%d %H:%M:%S')
+            }""")
+        print(f"feedback branch: {self.feedback_branch}")
 
-    def repositories(self):
+    def repositories(self) -> List[str]:
         # sorting ensures that repository order is deterministic
         repos = list(self.repo2group.keys())
         return sorted(repos)
 
-    def repo_ssh_path(self, repo):
-        return "git@" + self.hostname + ":" + self.github_org + "/" + repo + ".git"
+    def repo_ssh_path(self, repo: str) -> str:
+        # return "git@" + self.hostname + ":" + self.github_org + "/" + repo + ".git"
+        return f"git@{self.hostname}:{self.github_org}/{repo}.git"
 
-    def lookupTA(self, repo):
+    def lookupTA(self, repo: str) -> str:
         return self.ta_assignments[repo]
 
-    def pull_path(self, basepath, repo, use_user_name, anonymize):
+    def pull_path(self, basepath: str, repo: str, use_user_name: bool,
+                  anonymize: bool) -> str:
         # if anonymize, then get the SHA1 hash of the repo name
 
-        reponame = hashlib.sha1(repo.encode('utf-8')).hexdigest() if anonymize else repo
+        reponame = hashlib.sha1(repo.encode(
+            'utf-8')).hexdigest() if anonymize else repo
 
         if use_user_name:
             group = self.lookupGroup(repo)
@@ -238,48 +258,51 @@ class Config(object):
             return os.path.join(basepath, reponame)
 
     # this method anonymizes the repository name
-    def TA_target(self, ta_home, ta_dirname, repo):
-        return os.path.join(ta_home, ta_dirname, self.lookupTA(repo),  hashlib.sha1(repo.encode('utf-8')).hexdigest())
+    def TA_target(self, ta_home: str, ta_dirname: str, repo: str) -> str:
+        return os.path.join(ta_home, ta_dirname, self.lookupTA(repo),
+                            hashlib.sha1(repo.encode('utf-8')).hexdigest())
 
-    def pull_all(self, basepath, use_user_name, anonymize):
+    def pull_all(self, basepath: str, use_user_name: bool, anonymize: bool) -> None:
         # pull all repositories into archive and submission dirs
         for repo in self.repositories():
             rpath = self.pull_path(basepath, repo, use_user_name, anonymize)
             if not os.path.exists(rpath):
                 # clone it
-                print("Cloning {} to {}.".format(self.repo_ssh_path(repo), rpath))
+                print(f"Cloning {self.repo_ssh_path(repo)} to {rpath}.")
                 call(["git", "clone", self.repo_ssh_path(repo), rpath])
             else:
                 # pull it
-                print("Pulling {} to {}".format(self.repo_ssh_path(repo), rpath))
-                Popen(["git", "pull"], cwd=rpath).wait() # note: blocking
+                print(f"Pulling {self.repo_ssh_path(repo)} to {rpath}")
+                Popen(["git", "pull"], cwd=rpath).wait()  # note: blocking
 
             # if a due date was specified, roll back to due date
             if hasattr(self, "do_not_accept_changes_after_due_date_timestamp"):
                 proc = Popen(
-                      ["git",
-                       "rev-list",
-                       "-1",
-                       "--before=\"" + str(self.due_date) + "\"", "master"],
-                       stdout=PIPE,
-                       stderr=PIPE,
-                       cwd=rpath
-                       )
-                stdout, _ = proc.communicate() # note: blocking
+                    ["git",
+                     "rev-list",
+                     "-1",
+                     "--before=\"" + str(self.due_date) + "\"", "master"],
+                    stdout=PIPE,
+                    stderr=PIPE,
+                    cwd=rpath
+                )
+                stdout, _ = proc.communicate()  # note: blocking
                 pathspec = stdout.rstrip()
                 Popen(["git",
                        "checkout",
                        pathspec],
-                       cwd=rpath).wait() # note: blocking
+                      cwd=rpath).wait()  # note: blocking
 
-    def push_starter(self):
-        print("starter repo is: {}", self.starter_repo)
+    def push_starter(self) -> None:
+        print(f"starter repo is: {self.starter_repo}")
         for repo in self.repositories():
             actual_repo = self.repo_ssh_path(repo)
-            Popen(["git", "remote", "add", repo, actual_repo], cwd=self.starter_repo).wait()
-            Popen(["git", "push", repo, "master"], cwd=self.starter_repo).wait()
+            Popen(["git", "remote", "add", repo, actual_repo],
+                  cwd=self.starter_repo).wait()
+            Popen(["git", "push", repo, "master"],
+                  cwd=self.starter_repo).wait()
 
-    def copy_to_ta_folders(self, ta_home, ta_dirname, basepath):
+    def copy_to_ta_folders(self, ta_home: str, ta_dirname: str, basepath: str) -> None:
         # keep track of repository -> TA map and print out the key
         # after doing all of the copying
         ta_map = []
@@ -290,45 +313,50 @@ class Config(object):
             target = self.TA_target(ta_home, ta_dirname, repo)
 
             # save mapping
-            ta_map.append((repo,target))
+            ta_map.append((repo, target))
 
             if not os.path.exists(target):
                 os.makedirs(target)
             # compute source; add slash so that rsync copies
             # _contents_ of folder into target
-            source = self.pull_path(basepath, repo, False, self.anonymize_sub_path) + "/"
+            source = self.pull_path(
+                basepath, repo, False, self.anonymize_sub_path) + "/"
 
             # copy to ta folder
             if self.verbose:
-                print("Copying from {} to {}".format(source, target))
+                print(f"Copying from {source} to {target}")
             cmd = ["rsync",
                    "-vurlptoD" if self.verbose else "-urlptoD"]
-            cmd.extend(["--exclude={}".format(e) for e in self.rsync_excludes])
+            cmd.extend([f"--exclude={e}" for e in self.rsync_excludes])
             cmd.extend([source, target])
             call(cmd)
         # print mappings
-        for (repo,target) in ta_map:
+        for (repo, target) in ta_map:
             print(repo + " -> " + target)
 
-    def copy_from_ta_folders(self, ta_home, ta_dirname, basepath):
+    def copy_from_ta_folders(self, ta_home: str, ta_dirname: str, basepath: str) -> None:
         # cp all files except git stuff
         for repo in self.repositories():
             # compute target
-            target = self.pull_path(basepath, repo, False, self.anonymize_sub_path)
-            # compute source; trailing slash is to force rsync to copy the CONTENTS
-            # of source dir into the target dir, not to copy source dir into the target dir
+            target = self.pull_path(
+                basepath, repo, False, self.anonymize_sub_path)
+            # compute source; trailing slash is to force rsync to copy the
+            # CONTENTS of source dir into the target dir, not to copy source
+            # dir into the target dir
             source = self.TA_target(ta_home, ta_dirname, repo) + "/"
             if not os.path.exists(target):
                 # abort if target directory is missing!
-                print("ERROR: Target submission directory {} is missing! Aborting.".format(target), file=sys.stderr)
+                print(f"ERROR: Target submission directory {target} "
+                      f"is missing! Aborting.", file=sys.stderr)
                 sys.exit(1)
-                os.makedirs(target)
+                # os.makedirs(target)
             # copy to ta folder
             if self.verbose:
-                print("Copying from {} to {}".format(source, target))
+                print(f"Copying from {source} to {target}")
             call(
                 ["rsync",
-                 "-vurlptoD" if self.verbose else "-urlptoD", #changed flags to maintain permissions
+                 # changed flags to maintain permissions
+                 "-vurlptoD" if self.verbose else "-urlptoD",
                  "--exclude=*/.git",
                  "--exclude=*/.gitignore",
                  "--exclude=*/*.class",
@@ -336,38 +364,43 @@ class Config(object):
                  target]
             )
 
-    def branch_exists(self, rdir):
+    def branch_exists(self, rdir: str) -> bool:
         # check to see if FEEDBACK_BRANCH branch exists
-        proc = Popen(["git", "show-ref", "--verify", "--quiet", "refs/heads/" + self.feedback_branch],
+        proc = Popen(["git", "show-ref", "--verify", "--quiet",
+                      "refs/heads/" + self.feedback_branch],
                      stdout=PIPE,
                      stderr=PIPE,
                      cwd=rdir)
-        proc.communicate() # note: blocking; don't care about output
+        proc.communicate()  # note: blocking; don't care about output
         return proc.returncode == 0
 
-    def commit_changes(self, basepath):
+    def commit_changes(self, basepath: str) -> None:
         for repo in self.repositories():
             # get submissions dir path for repo
-            rdir = self.pull_path(basepath,  repo, False, self.anonymize_sub_path)
+            rdir = self.pull_path(basepath, repo, False,
+                                  self.anonymize_sub_path)
             if not self.branch_exists(rdir):
                 # create branch
                 if self.verbose:
-                    print("Creating new branch {}".format(self.feedback_branch))
-                Popen(["git", "checkout", "-b", self.feedback_branch], cwd=rdir).wait()
+                    print(f"Creating new branch {self.feedback_branch}")
+                Popen(["git", "checkout", "-b", self.feedback_branch],
+                      cwd=rdir).wait()
             else:
-                Popen(["git", "checkout", self.feedback_branch], cwd=rdir).wait()
+                Popen(["git", "checkout", self.feedback_branch],
+                      cwd=rdir).wait()
             # add any new files
             if self.verbose:
-                print("Adding any new files in {}".format(rdir))
-            Popen(["git", "add", "*"], cwd=rdir).wait() # note: blocking
+                print(f"Adding any new files in {rdir}")
+            Popen(["git", "add", "*"], cwd=rdir).wait()  # note: blocking
             # commit
             if self.verbose:
                 print("Committing feedback for " + rdir)
-            Popen(["git", "commit", "-am", "TA feedback"], cwd=rdir).wait() # note: blocking
+            Popen(["git", "commit", "-am", "TA feedback"],
+                  cwd=rdir).wait()  # note: blocking
 
     # yeah, we brute force these...
     # fortunately, there aren't many to check
-    def deanonymize_sha1_repo(self, anonrepo):
+    def deanonymize_sha1_repo(self, anonrepo: str) -> str:
         for repo in self.repo2group.keys():
             utf8_repo = repo.encode('utf-8')
             repohash = hashlib.sha1(utf8_repo).hexdigest()
@@ -376,16 +409,17 @@ class Config(object):
         print("ERROR: Could not deanonymize repository with SHA1 = " + anonrepo)
         sys.exit(1)
 
-    def issue_pull_request(self, reponame, org):
+    def issue_pull_request(self, reponame: str, org: Organization) -> int:
         # extract basename
         bn = os.path.basename(reponame)
 
         # get real repository name if hashed
-        repo = self.deanonymize_sha1_repo(bn) if self.anonymize_sub_path else bn
+        repo = self.deanonymize_sha1_repo(bn) \
+            if self.anonymize_sub_path else bn
 
         # get submissions dir path for repo
         rdir = self.pull_path(self.submission_path, reponame, False, False)
-        
+
         # obtain handle to remote repository
         grepo = org.get_repo(repo)
 
@@ -399,21 +433,22 @@ class Config(object):
             return errno.ENOENT
 
         if self.feedback_branch in remote_branches:
-            print("ABORT: {} branch already exists in remote repository.".format(self.feedback_branch))
+            print(f"ABORT: {self.feedback_branch} branch already exists in "
+                  f"remote repository.")
             return errno.EEXIST
 
-
         if self.verbose:
-            print("Pushing branch {} to origin.".format(self.feedback_branch))
+            print(f"Pushing branch {self.feedback_branch} to origin.")
 
         #### Lida: needed to edit since reponame contains the relative path, not just the name ####
-        #### Dan/Bill: not sure why this is necessary... hopefully we trigger it again and figure out why...
-        #Popen(["git", "push", "origin", self.feedback_branch], cwd=reponame).wait()
+        # Dan/Bill: not sure why this is necessary... hopefully we trigger it again and figure out why...
+        # Popen(["git", "push", "origin", self.feedback_branch], cwd=reponame).wait()
         Popen(["git", "push", "origin", self.feedback_branch], cwd=rdir).wait()
-        
+
         # create pull request
         if self.verbose:
-            print("Issuing pull request from branch '{}' to branch 'master' in {}.".format(self.feedback_branch, repo))
+            print(f"Issuing pull request from branch '{self.feedback_branch}' "
+                  f"to branch 'master' in {repo}.")
 
         # push commits upstream
 
@@ -421,9 +456,10 @@ class Config(object):
         # this command from other locations
         grepo = org.get_repo(os.path.basename(repo))
         grepo.create_pull(
-            title = "Feedback",
-            base = "master",
-            head = self.feedback_branch,
-            body = "Feedback on " + self.assignment_name + " from " + self.course + " teaching staff."
+            title="Feedback",
+            base="master",
+            head=self.feedback_branch,
+            body="Feedback on " + self.assignment_name +
+                 " from " + self.course + " teaching staff."
         )
         return 0
