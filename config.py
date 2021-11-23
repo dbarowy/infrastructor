@@ -271,8 +271,12 @@ class Config(object):
                 print(f"Cloning {self.repo_ssh_path(repo)} to {rpath}.")
                 call(["git", "clone", self.repo_ssh_path(repo), rpath])
             else:
+                # first reset repository
+                print(f"Resetting {self.repo_ssh_path(repo)} in {rpath}")
+                Popen(["git", "checkout", "."], cwd=rpath).wait()  # note: blocking
+                
                 # pull it
-                print(f"Pulling {self.repo_ssh_path(repo)} to {rpath}")
+                print(f"Pulling {self.repo_ssh_path(repo)} in {rpath}")
                 Popen(["git", "pull"], cwd=rpath).wait()  # note: blocking
 
             # if a due date was specified, roll back to due date
