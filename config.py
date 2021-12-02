@@ -143,7 +143,7 @@ class Config(object):
         self.feedback_branch: str = conf["feedback_branch"]
         self.default_branch: str = "main"
         if "default_branch" in conf:
-            self.default_branch: str = conf["default_branch"]
+            self.default_branch = conf["default_branch"]
         if "do_not_accept_changes_after_due_date_timestamp" in conf:
             self.due_date = conf["do_not_accept_changes_after_due_date_timestamp"]
         self.anonymize_sub_path: bool = conf[
