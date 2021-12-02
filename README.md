@@ -65,6 +65,7 @@ The complete set of configuration options are as follows:
 |`"archive_path"`|`string`|`"/path/to/archive"`|Path to folder intended as deanonymized repository of student submissions for Academic Honor Code cases.|
 |`"submission_path"`|`string`|`"/path/to/submissions"`|Path to faculty-only staging area for squashing and modifying TA feedback before issuing pull requests.|
 |`"ta_path"`|`string`|`"/path/to/TAs"`|Path to TA staging area where anonymized student submissions are copied.|
+|`"default_branch"`|`string`|`"main"`| Branch that student commits to. Defaults to `main` if not specified.|
 |`"feedback_branch"`|`string`|`"assignment-feedback"`|Branch to commit TA/instructor feedback on. Pull requests are issued from this branch.|
 |`"starter_repo"`|`string`|`"/home/example/starter-repo"`|Path to starter repo.  Starter code is distributed by setting each student repository as a "remote" for the starter repository and then `push`ing.  Student repositories _must_ be empty (i.e., no `master` branch) otherwise `push` will fail.|
 |`"github_org"`|`string`|`"williams-cs"`|Name of the GitHub organization to use.|

@@ -30,6 +30,7 @@ def merge_dicts(base_dict: Dict[_KT, _VT], update_with: Dict[_KT, _VT]) -> Dict[
 class Config(object):
     # config JSON
     # {
+    #  "default_branch" : "master",
     #  "feedback_branch" : "TA-feedback",
     #  "hostname" : "github-wcs",
     #  "course" : "cs334",
@@ -140,9 +141,11 @@ class Config(object):
         self.submission_path: str = conf["submission_path"]
         self.ta_path: str = conf["ta_path"]
         self.feedback_branch: str = conf["feedback_branch"]
+        self.default_branch: str = "main"
+        if "default_branch" in conf:
+            self.default_branch: str = conf["default_branch"]
         if "do_not_accept_changes_after_due_date_timestamp" in conf:
-            self.due_date = conf[
-                "do_not_accept_changes_after_due_date_timestamp"]
+            self.due_date = conf["do_not_accept_changes_after_due_date_timestamp"]
         self.anonymize_sub_path: bool = conf[
             "anonymize_sub_path"] if "anonymize_sub_path" in conf else True
         self.rsync_excludes: List[str] = conf["rsync_excludes"]
@@ -270,9 +273,13 @@ class Config(object):
                 # clone it
                 print(f"Cloning {self.repo_ssh_path(repo)} to {rpath}.")
                 call(["git", "clone", self.repo_ssh_path(repo), rpath])
-            else:
+            else: # existing repository
+                # make sure we're on the default branch
+                print(f"Switching to '{self.default_branch}' branch in {self.repo_ssh_path(repo)} at {rpath}")
+                Popen(["git", "checkout", self.default_branch], cwd=rpath).wait()  # note: blocking
+
                 # first reset repository
-                print(f"Resetting {self.repo_ssh_path(repo)} in {rpath}")
+                print(f"Resetting {self.repo_ssh_path(repo)} at {rpath}")
                 Popen(["git", "checkout", "."], cwd=rpath).wait()  # note: blocking
                 
                 # pull it
