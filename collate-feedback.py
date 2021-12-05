@@ -4,7 +4,7 @@ import argparse
 import os
 import sys
 
-from config import Config
+from Infrastructor import Infrastructor
 
 
 def dump_file(fname: str) -> None:
@@ -29,14 +29,15 @@ def main() -> None:
 
     args = parser.parse_args()
 
-    conf = Config([sys.argv[0], args.config])
+    infra = Infrastructor([sys.argv[0], args.config])
+    conf = infra.config
 
-    for student in sorted(conf.list_of_users()):
-        repo = conf.lookupRepo(student)
+    for student in sorted(infra.list_of_users(conf)):
+        repo = infra.lookupRepo(conf, student)
 
         # get submissions dir path for repo
-        rdir = conf.pull_path(conf.submission_path, repo, False,
-                              conf.anonymize_sub_path)
+        rdir = infra.pull_path(conf, conf.submission_path, repo, False,
+                               conf.anonymize_sub_path)
 
         # all graded labs should have a feedback branch
         # if not conf.branch_exists(rdir):

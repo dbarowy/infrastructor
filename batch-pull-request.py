@@ -5,7 +5,7 @@ from typing import Sequence, Tuple
 
 from github import Github
 
-from config import Config
+from Infrastructor import Infrastructor
 
 
 def usage(pname: str) -> None:
@@ -23,24 +23,26 @@ def parse_args(args: Sequence[str]) -> Tuple[str, str, str]:
 def main() -> None:
     # get config
     user, passwd, cfile = parse_args(sys.argv)
-    conf = Config([sys.argv[0], cfile])
+    infra = Infrastructor([sys.argv[0], cfile])
+    conf = infra.config
 
     # init Github SDK
     g = Github(user, passwd)
-    guser = g.get_user()
+    # guser = g.get_user()
     org = g.get_organization("williams-cs")
 
     # TODO: verify that local repo is on the correct branch
     basepath = conf.submission_path
     for repo in conf.repositories():
         # get submissions dir path for repo
-        rdir = conf.pull_path(basepath, repo, False, conf.anonymize_sub_path)
-        if not conf.branch_exists(rdir):
+        rdir = infra.pull_path(conf, basepath, repo, False,
+                               conf.anonymize_sub_path)
+        if not infra.branch_exists(conf, rdir):
             print(f"No feedback branch for {rdir}")
             continue
         # issue pull request for given repo
         print(f"issuing pull request for {rdir}")
-        conf.issue_pull_request(rdir, org)
+        infra.issue_pull_request(conf, rdir, org)
 
 
 if __name__ == "__main__":

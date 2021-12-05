@@ -5,7 +5,7 @@ import os
 import subprocess
 import sys
 
-from config import Config
+from Infrastructor import Infrastructor
 
 
 def dump_file(fname: str) -> None:
@@ -32,11 +32,12 @@ def main() -> None:
 
     args = parser.parse_args()
 
-    conf = Config([sys.argv[0], args.config])
+    infra = Infrastructor([sys.argv[0], args.config])
+    conf = infra.config
 
-    basepath = conf.ta_path
+    # basepath = conf.ta_path
     for repo in conf.repositories():
-        ta_dir = conf.TA_target(conf.ta_path, conf.assignment_name, repo)
+        ta_dir = infra.TA_target(conf, conf.ta_path, conf.assignment_name, repo)
         print(f"{repo}: {ta_dir}")
         with subprocess.Popen(args=args.command.split(),
                               stdout=subprocess.PIPE,

@@ -155,7 +155,7 @@ class Infrastructor(object):
         # pull all repositories into archive and submission dirs
         for repo in Infrastructor.repositories(config):
             rpath = Infrastructor.pull_path(config, basepath, repo,
-                                   use_user_name, anonymize)
+                                            use_user_name, anonymize)
             if not os.path.exists(rpath):
                 # clone it
                 print(f"Cloning {Infrastructor.repo_ssh_path(config, repo)} to {rpath}.")
@@ -166,7 +166,8 @@ class Infrastructor(object):
                 Popen(["git", "pull"], cwd=rpath).wait()  # note: blocking
 
             # if a due date was specified, roll back to due date
-            if hasattr(config, "do_not_accept_changes_after_due_date_timestamp"):
+            if hasattr(config,
+                       "do_not_accept_changes_after_due_date_timestamp"):
                 proc = Popen(
                     ["git",
                      "rev-list",
@@ -211,7 +212,7 @@ class Infrastructor(object):
             # compute source; add slash so that rsync copies
             # _contents_ of folder into target
             source = Infrastructor.pull_path(config, basepath, repo, False,
-                                    config.anonymize_sub_path) + "/"
+                                             config.anonymize_sub_path) + "/"
 
             # copy to ta folder
             if self.verbose:
@@ -236,7 +237,8 @@ class Infrastructor(object):
             # compute source; trailing slash is to force rsync to copy the
             # CONTENTS of source dir into the target dir, not to copy source
             # dir into the target dir
-            source = Infrastructor.TA_target(config, ta_home, ta_dirname, repo) + "/"
+            source = Infrastructor.TA_target(config, ta_home, ta_dirname,
+                                             repo) + "/"
             if not os.path.exists(target):
                 # abort if target directory is missing!
                 print(f"ERROR: Target submission directory {target} "
@@ -272,7 +274,7 @@ class Infrastructor(object):
         for repo in Infrastructor.repositories(config):
             # get submissions dir path for repo
             rdir = Infrastructor.pull_path(config, basepath, repo, False,
-                                  config.anonymize_sub_path)
+                                           config.anonymize_sub_path)
             if not Infrastructor.branch_exists(config, rdir):
                 # create branch
                 if self.verbose:

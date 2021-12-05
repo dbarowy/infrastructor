@@ -5,7 +5,7 @@ from typing import Tuple, Sequence
 
 from github import Github
 
-from config import Config
+from Infrastructor import Infrastructor
 
 
 def usage(pname: str) -> None:
@@ -24,7 +24,8 @@ def parse_args(args: Sequence[str]) -> Tuple[str, str, str, str]:
 def main() -> None:
     # get config
     user, passwd, repo, cfile = parse_args(sys.argv)
-    conf = Config([sys.argv[0], cfile])
+    infra = Infrastructor([sys.argv[0], cfile])
+    conf = infra.config
 
     # init Github SDK
     g = Github(user, passwd)
@@ -34,7 +35,7 @@ def main() -> None:
     # TODO: verify that local repo is on the correct branch
 
     # issue pull request for given repo
-    conf.issue_pull_request(repo, org)
+    infra.issue_pull_request(conf, repo, org)
 
 
 if __name__ == "__main__":

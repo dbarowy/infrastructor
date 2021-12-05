@@ -6,7 +6,7 @@ import random
 import sys
 from typing import Sequence, Tuple, List, Dict
 
-from config import Config
+from utils import group2repo, java_string_hashcode
 
 
 def usage(pname: str) -> None:
@@ -28,7 +28,7 @@ def main() -> None:
         conf = json.load(f)
 
     # seed RNG based on assignment name
-    seed = Config.java_string_hashcode(conf["assignment_name"])
+    seed = java_string_hashcode(conf["assignment_name"])
     random.seed(seed)
 
     # read student names from input file
@@ -46,7 +46,7 @@ def main() -> None:
     repo_map: Dict[str, str] = {}
     for group in groups:
         # synthesize repo name
-        repo = Config.group2repo(
+        repo = group2repo(
             conf["course"], conf["assignment_name"], group)
         for student in group:
             # add pairing to json
