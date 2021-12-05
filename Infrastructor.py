@@ -105,7 +105,8 @@ class Infrastructor(object):
                     ["git",
                      "rev-list",
                      "-1",
-                     "--before=\"" + str(config.due_date) + "\"", "master"],
+                     "--before=\"" + str(config.due_date) + "\"",
+                     config.default_branch],
                     stdout=PIPE,
                     stderr=PIPE,
                     cwd=rpath
@@ -124,7 +125,7 @@ class Infrastructor(object):
             actual_repo = config.repo_ssh_path(repo)
             Popen(["git", "remote", "add", repo, actual_repo],
                   cwd=config.starter_repo).wait()
-            Popen(["git", "push", repo, "master"],
+            Popen(["git", "push", repo, config.default_branch],
                   cwd=config.starter_repo).wait()
 
     def copy_to_ta_folders(self, config: Config, ta_home: str, ta_dirname: str,
@@ -241,13 +242,13 @@ class Infrastructor(object):
         # obtain handle to remote repository
         grepo = org.get_repo(repo)
 
-        # ensure that the master branch exists on remote
+        # ensure that the default branch exists on remote
         remote_branches = []
         for rb in grepo.get_branches():
             remote_branches.append(rb.name)
 
-        if "master" not in remote_branches:
-            print("ABORT: master branch does not exist in remote repository.")
+        if config.default_branch not in remote_branches:
+            print(f"ABORT: {config.default_branch} branch does not exist in remote repository.")
             return errno.ENOENT
 
         if config.feedback_branch in remote_branches:
@@ -265,8 +266,8 @@ class Infrastructor(object):
 
         # create pull request
         if self.verbose:
-            print(f"Issuing pull request from branch '{config.feedback_branch}' "
-                  f"to branch 'master' in {repo}.")
+            print(f"Issuing pull request from branch '{config.feedback_branch}"
+                  f"' to branch '{config.default_branch}' in {repo}.")
 
         # push commits upstream
 
@@ -275,7 +276,7 @@ class Infrastructor(object):
         grepo = org.get_repo(os.path.basename(repo))
         grepo.create_pull(
             title="Feedback",
-            base="master",
+            base=config.default_branch,
             head=config.feedback_branch,
             body="Feedback on " + config.assignment_name +
                  " from " + config.course + " teaching staff."
