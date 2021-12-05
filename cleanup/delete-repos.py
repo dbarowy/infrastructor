@@ -1,30 +1,34 @@
 #!/usr/bin/env python
 
-import sys
-import json
-import re
-import random
 import os.path
-import time
-from config import Config
+import sys
+from typing import Tuple, Sequence
+
 from github import Github
 from github import GithubException
+
+from Infrastructor import Infrastructor
+
 
 class CannotAddUserToRepo(Exception):
     pass
 
-def usage(pname):
-        print("Usage: {} <github username> <github password> <json config file>".format(pname))
 
-def config(args):
+def usage(pname: str) -> None:
+    print(f"Usage: {pname} <github username> <github password> "
+          f"<json config file>")
+
+
+def config(args: Sequence[str]) -> Tuple[str, str, str]:
     if len(args) != 4:
         pname = os.path.basename(args[0])
         usage(pname)
         sys.exit(1)
-    return (args[1], args[2], args[3])
+    return args[1], args[2], args[3]
 
-def main():
-    (user,password,conf_file) = config(sys.argv)
+
+def main() -> None:
+    (user, password, conf_file) = config(sys.argv)
 
     # Read in json config (generated with generate_config.py)
     # with open(conf_file, 'r') as f:
@@ -34,25 +38,27 @@ def main():
     # seed = Config.java_string_hashcode(conf.assignment_name)
     # random.seed(seed)
 
-    conf = Config([sys.argv[0], conf_file])
-    conf.pretty_print()
+    infra = Infrastructor([sys.argv[0], conf_file])
+    conf = infra.config
+    conf.pretty_print(conf)
 
     # connect to github
     g = Github(user, password)
-    guser = g.get_user()
+    # guser = g.get_user()
     org = g.get_organization("williams-cs")
 
-    for repo_name,group in conf.repo2group.items():
-        repo = None
+    for repo_name, group in conf.repo2group.items():
+        # repo = None
         try:
             # check to see if repository already exists
             repo = org.get_repo(repo_name)
-            ans = input("delete repository {}? (y/n) ".format(repo_name))
+            ans = input(f"delete repository {repo_name}? (y/n) ")
             if ans == "y":
                 repo.delete()
         except GithubException:
-            print("GitHubException. We could not delete repository {}".format(repo_name))
-            
+            print(f"GitHubException. "
+                  f"We could not delete repository {repo_name}")
+
 
 if __name__ == "__main__":
     main()

@@ -1,16 +1,19 @@
 #!/usr/bin/env python
 
-import sys
 import os.path
+import sys
 import time
 from typing import Sequence, Tuple
 
-from config import Config
 from github import Github
 from github import GithubException
 
+from Infrastructor import Infrastructor
+
+
 class CannotAddUserToRepo(Exception):
     pass
+
 
 def usage(pname: str) -> None:
     print(f"Usage: {pname} <github username> <github password> "
@@ -28,7 +31,8 @@ def config(args: Sequence[str]) -> Tuple[str, str, str]:
 def main() -> None:
     (user, password, conf_file) = config(sys.argv)
 
-    conf = Config([sys.argv[0], conf_file])
+    infra = Infrastructor([sys.argv[0], conf_file])
+    conf = infra.config
     conf.pretty_print()
 
     # connect to github
@@ -36,7 +40,7 @@ def main() -> None:
     org = g.get_organization("williams-cs")
 
     for repo_name, group in conf.repo2group.items():
-        repo = None
+        # repo = None
         try:
             # check to see if repository already exists
             repo = org.get_repo(repo_name)

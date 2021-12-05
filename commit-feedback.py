@@ -2,19 +2,20 @@
 
 import sys
 
-from config import Config
+from Infrastructor import Infrastructor
 
 
 def main() -> None:
     # get config
-    conf = Config(sys.argv)
+    infra = Infrastructor(sys.argv)
+    conf = infra.config
 
     # copy every commented assignment from TA location to submissions folder
-    conf.copy_from_ta_folders(conf.ta_path, conf.assignment_name,
-                              conf.submission_path)
+    infra.copy_from_ta_folders(conf, conf.ta_path, conf.assignment_name,
+                               conf.submission_path)
 
     # commit changes
-    conf.commit_changes(conf.submission_path)
+    infra.commit_changes(conf, conf.submission_path)
 
 
 if __name__ == "__main__":

@@ -2,17 +2,18 @@
 
 import sys
 
-from config import Config
+from Infrastructor import Infrastructor
 
 
 def main() -> None:
     # get config
-    conf = Config(sys.argv)
+    infra = Infrastructor(sys.argv)
+    conf = infra.config
 
     # issue go through the student repos, and add them as remotes for the
     # starter repo in the config. then push the master branch of the starter
     # repo to the student repo's master
-    conf.push_starter()
+    infra.push_starter(conf)
 
 
 if __name__ == "__main__":
