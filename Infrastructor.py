@@ -17,6 +17,15 @@ _VT = TypeVar("_VT")
 # this makes a copy
 def merge_dicts(base_dict: Dict[_KT, _VT], update_with: Dict[_KT, _VT]) -> Dict[
     _KT, _VT]:
+    """Merges two dictionaries into a new dictionary.
+
+    In the case of a conflict, the value in base_dict will be overwritten by
+    value in update_with.
+
+    :param base_dict: The base dictionary
+    :param update_with: The dictionary to be updated with
+    :return: A new dictionary that merges the content of two dictionary.
+    """
     d = {}
     d.update(base_dict)
     d.update(update_with)
@@ -24,13 +33,32 @@ def merge_dicts(base_dict: Dict[_KT, _VT], update_with: Dict[_KT, _VT]) -> Dict[
 
 
 class Infrastructor(object):
+    """The main class for Infrastructor
+
+    Contains methods that takes Config class and executes logic
+    """
+
     @staticmethod
     def usage(pname: str) -> None:
+        """Prints out the usage for the executable
+
+        :type pname: Name of the current executable
+        """
         print(f"Usage: {pname} [flags] <json config file>", file=sys.stderr)
         print("\twhere flags are:", file=sys.stderr)
         print("\t-v\tverbose mode; print debug output.", file=sys.stderr)
 
     def argparse(self, args: Sequence[str]) -> Dict[str, Any]:
+        """Calls rec_argparse to parse the input arguments
+
+        Returns a dictionary of
+        ```
+        { "verbose": False, "json_conf_file": "<filename>.conf" }
+        ```
+
+        :param args: list of input arguments
+        :return: a dictionary of keywords and their values
+        """
         pname = os.path.basename(args[0])
         # convert to list and strip program name
         # xs = list(args)
@@ -65,6 +93,11 @@ class Infrastructor(object):
                 sys.exit(1)
 
     def __init__(self, args: Sequence[str]):
+        """
+        Initializes the Infrastructor given a list of input arguments
+
+        :param args: list of input arguments
+        """
         print(args)
         # self check
         self_check()
@@ -72,13 +105,22 @@ class Infrastructor(object):
         # get arguments
         opts = self.argparse(args)
         self.verbose: bool = opts["verbose"]
+        "Whether to enable verbose output"
 
+        # TODO: extend the class to read in multiple config files at once?
         self.config = Config(opts["json_conf_file"])
+        "The Config object representing the config file in input argument"
 
     @staticmethod
     def pull_all(config: Config, basepath: str, use_user_name: bool,
                  anonymize: bool) -> None:
-        # pull all repositories into archive and submission dirs
+        """Pulls all repositories into archive and submission dirs
+
+        :param config: The Config object for the assignment
+        :param basepath: Pate to base directory
+        :param use_user_name: Whether to use username as part of path
+        :param anonymize: Whether to anonymize reponame
+        """
         for repo in config.repositories:
             rpath = config.pull_path(basepath, repo, use_user_name, anonymize)
             if not os.path.exists(rpath):
@@ -87,20 +129,23 @@ class Infrastructor(object):
                 call(["git", "clone", config.repo_ssh_path(repo), rpath])
             else:  # existing repository
                 # make sure we're on the default branch
-                print(f"Switching to '{config.default_branch}' branch in {config.repo_ssh_path(repo)} at {rpath}")
+                print(f"Switching to '{config.default_branch}' branch in "
+                      f"{config.repo_ssh_path(repo)} at {rpath}")
                 Popen(["git", "checkout", config.default_branch],
                       cwd=rpath).wait()  # note: blocking
 
                 # first reset repository
                 print(f"Resetting {config.repo_ssh_path(repo)} at {rpath}")
-                Popen(["git", "checkout", "."], cwd=rpath).wait()  # note: blocking
+                Popen(["git", "checkout", "."],
+                      cwd=rpath).wait()  # note: blocking
 
                 # pull it
                 print(f"Pulling {config.repo_ssh_path(repo)} in {rpath}")
                 Popen(["git", "pull"], cwd=rpath).wait()  # note: blocking
 
             # if a due date was specified, roll back to due date
-            if hasattr(config, "do_not_accept_changes_after_due_date_timestamp"):
+            if hasattr(config,
+                       "do_not_accept_changes_after_due_date_timestamp"):
                 proc = Popen(
                     ["git",
                      "rev-list",
@@ -120,6 +165,15 @@ class Infrastructor(object):
 
     @staticmethod
     def push_starter(config: Config) -> None:
+        """Pushes the starter repo to all student repositories.
+
+        Starter code is distributed by setting each student repository as a
+        "remote" for the starter repository and then `push`ing.  Student
+        repositories _must_ be empty (i.e., no `main` branch) otherwise
+        `push` will fail.
+
+        :param config: The Config object for the assignment
+        """
         print(f"starter repo is: {config.starter_repo}")
         for repo in config.repositories:
             actual_repo = config.repo_ssh_path(repo)
@@ -130,6 +184,13 @@ class Infrastructor(object):
 
     def copy_to_ta_folders(self, config: Config, ta_home: str, ta_dirname: str,
                            basepath: str) -> None:
+        """ Copies all local repositories to TA directories for grading
+
+        :param config: The Config object for the assignment
+        :param ta_home: Path to home directory for all TA grading
+        :param ta_dirname: Name of directory for this assignment
+        :param basepath: Base path where local repositories are stored
+        """
         # keep track of repository -> TA map and print out the key
         # after doing all of the copying
         ta_map = []
@@ -163,6 +224,13 @@ class Infrastructor(object):
 
     def copy_from_ta_folders(self, config: Config, ta_home: str,
                              ta_dirname: str, basepath: str) -> None:
+        """ Copies all local repositories back from TA directories after grading
+
+        :param config: The Config object for the assignment
+        :param ta_home: Path to home directory for all TA grading
+        :param ta_dirname: Name of directory for this assignment
+        :param basepath: Base path for local repositories to be copied to
+        """
         # cp all files except git stuff
         for repo in config.repositories:
             # compute target
@@ -194,6 +262,12 @@ class Infrastructor(object):
 
     @staticmethod
     def branch_exists(config: Config, rdir: str) -> bool:
+        """Checks if the feedback branch exists in a local repository
+
+        :param config: The Config object for the assignment
+        :param rdir: Path to a local repository
+        :return: If the feedback branch exists.
+        """
         # check to see if FEEDBACK_BRANCH branch exists
         proc = Popen(["git", "show-ref", "--verify", "--quiet",
                       "refs/heads/" + config.feedback_branch],
@@ -204,6 +278,11 @@ class Infrastructor(object):
         return proc.returncode == 0
 
     def commit_changes(self, config: Config, basepath: str) -> None:
+        """Commits changes to the feedback branch in all repos
+
+        :param config: The Config object for the assignment
+        :param basepath: basepath for local path of repositories
+        """
         for repo in config.repositories:
             # get submissions dir path for repo
             rdir = config.pull_path(basepath, repo, False,
@@ -229,6 +308,14 @@ class Infrastructor(object):
 
     def issue_pull_request(self, config: Config, reponame: str,
                            org: Organization) -> int:
+        """Push local feedback branch to remote and issue pull request to the
+        default branch for the specified repo
+
+        :param config: The Config object for the assignment
+        :param reponame: Name of the repository
+        :param org: A github.Organization object
+        :return: an error number defined in errno; or 0 if no error.
+        """
         # extract basename
         bn = os.path.basename(reponame)
 
@@ -262,7 +349,8 @@ class Infrastructor(object):
         #### Lida: needed to edit since reponame contains the relative path, not just the name ####
         # Dan/Bill: not sure why this is necessary... hopefully we trigger it again and figure out why...
         # Popen(["git", "push", "origin", self.feedback_branch], cwd=reponame).wait()
-        Popen(["git", "push", "origin", config.feedback_branch], cwd=rdir).wait()
+        Popen(["git", "push", "origin", config.feedback_branch],
+              cwd=rdir).wait()
 
         # create pull request
         if self.verbose:
