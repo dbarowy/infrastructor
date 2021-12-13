@@ -62,7 +62,7 @@ class Config(object):
         rsync_excludes (List[str]): List of files & directories to be excluded from rsync when copying to TA folder.
     """
 
-    def __init__(self, json_conf_file: str):
+    def __init__(self, json_conf_file: str, verbosity: bool):
 
         # open config file
         with open(json_conf_file, 'r') as f:
@@ -70,6 +70,9 @@ class Config(object):
             conf = json.loads(f.read())
 
         # declare/init fields
+
+        self.verbose: bool = verbosity
+        "Flag to enable verbose output"
 
         self.hostname: str = conf["hostname"]
         """

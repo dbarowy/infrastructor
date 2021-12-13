@@ -2,12 +2,12 @@ import errno
 import os.path
 import sys
 from subprocess import call, Popen, PIPE
-from typing import Any, Dict, Sequence, TypeVar
+from typing import Dict, TypeVar
 
+import argparse
 from github.Organization import Organization
 
 from config import Config
-from utils import self_check
 
 # Generics for type hints in merge_dicts()
 _KT = TypeVar("_KT")
@@ -38,78 +38,19 @@ class Infrastructor(object):
     Contains methods that takes Config class and executes logic
     """
 
-    @staticmethod
-    def usage(pname: str) -> None:
-        """Prints out the usage for the executable
+    default_parser = argparse.ArgumentParser()
+    """The default parser with the minimum required arguments
 
-        :type pname: Name of the current executable
-        """
-        print(f"Usage: {pname} [flags] <json config file>", file=sys.stderr)
-        print("\twhere flags are:", file=sys.stderr)
-        print("\t-v\tverbose mode; print debug output.", file=sys.stderr)
-
-    def argparse(self, args: Sequence[str]) -> Dict[str, Any]:
-        """Calls rec_argparse to parse the input arguments
-
-        Returns a dictionary of
-        ```
-        { "verbose": False, "json_conf_file": "<filename>.conf" }
-        ```
-
-        :param args: list of input arguments
-        :return: a dictionary of keywords and their values
-        """
-        pname = os.path.basename(args[0])
-        # convert to list and strip program name
-        # xs = list(args)
-        tail = args[1:]
-        return self.rec_argparse(tail, pname)
-
-    def rec_argparse(self, args: Sequence[str], pname: str) -> Dict[str, Any]:
-        flags = {
-            "-v": lambda: {"verbose": True}
-        }
-
-        # base case 1: zero-length string
-        if len(args) == 0:
-            Infrastructor.usage(pname)
-            sys.exit(1)
-
-        # base case 2: string has one (positional) argument left
-        if len(args) == 1:
-            return {
-                "json_conf_file": args[0],
-                "verbose": False
-            }
-        # recursive case: optional flags remain
-        else:
-            print("length >1 arg", file=sys.stderr)
-            try:
-                head, tail = args[0], args[1:]
-                d = flags[head]()
-                return merge_dicts(self.rec_argparse(tail, pname), d)
-            except Exception:
-                Infrastructor.usage(pname)
-                sys.exit(1)
-
-    def __init__(self, args: Sequence[str]):
-        """
-        Initializes the Infrastructor given a list of input arguments
-
-        :param args: list of input arguments
-        """
-        print(args)
-        # self check
-        self_check()
-
-        # get arguments
-        opts = self.argparse(args)
-        self.verbose: bool = opts["verbose"]
-        "Whether to enable verbose output"
-
-        # TODO: extend the class to read in multiple config files at once?
-        self.config = Config(opts["json_conf_file"])
-        "The Config object representing the config file in input argument"
+    ```python
+    args = Infrastructor.default_parser.parse_args()
+    conf = Config(args.config, args.verbose)
+    ```
+    """
+    default_parser.add_argument('config', type=str,
+                                help='config file for the lab')
+    default_parser.add_argument('-v', '--verbose',
+                                action='store_true',
+                                help='enable verbose output')
 
     @staticmethod
     def pull_all(config: Config, basepath: str, use_user_name: bool,
@@ -182,7 +123,8 @@ class Infrastructor(object):
             Popen(["git", "push", repo, config.default_branch],
                   cwd=config.starter_repo).wait()
 
-    def copy_to_ta_folders(self, config: Config, ta_home: str, ta_dirname: str,
+    @staticmethod
+    def copy_to_ta_folders(config: Config, ta_home: str, ta_dirname: str,
                            basepath: str) -> None:
         """ Copies all local repositories to TA directories for grading
 
@@ -211,10 +153,10 @@ class Infrastructor(object):
                 basepath, repo, False, config.anonymize_sub_path) + "/"
 
             # copy to ta folder
-            if self.verbose:
+            if config.verbose:
                 print(f"Copying from {source} to {target}")
             cmd = ["rsync",
-                   "-vurlptoD" if self.verbose else "-urlptoD"]
+                   "-vurlptoD" if config.verbose else "-urlptoD"]
             cmd.extend([f"--exclude={e}" for e in config.rsync_excludes])
             cmd.extend([source, target])
             call(cmd)
@@ -222,7 +164,8 @@ class Infrastructor(object):
         for (repo, target) in ta_map:
             print(repo + " -> " + target)
 
-    def copy_from_ta_folders(self, config: Config, ta_home: str,
+    @staticmethod
+    def copy_from_ta_folders(config: Config, ta_home: str,
                              ta_dirname: str, basepath: str) -> None:
         """ Copies all local repositories back from TA directories after grading
 
@@ -247,12 +190,12 @@ class Infrastructor(object):
                 sys.exit(1)
                 # os.makedirs(target)
             # copy to ta folder
-            if self.verbose:
+            if config.verbose:
                 print(f"Copying from {source} to {target}")
             call(
                 ["rsync",
                  # changed flags to maintain permissions
-                 "-vurlptoD" if self.verbose else "-urlptoD",
+                 "-vurlptoD" if config.verbose else "-urlptoD",
                  "--exclude=*/.git",
                  "--exclude=*/.gitignore",
                  "--exclude=*/*.class",
@@ -277,7 +220,8 @@ class Infrastructor(object):
         proc.communicate()  # note: blocking; don't care about output
         return proc.returncode == 0
 
-    def commit_changes(self, config: Config, basepath: str) -> None:
+    @staticmethod
+    def commit_changes(config: Config, basepath: str) -> None:
         """Commits changes to the feedback branch in all repos
 
         :param config: The Config object for the assignment
@@ -289,7 +233,7 @@ class Infrastructor(object):
                                     config.anonymize_sub_path)
             if not Infrastructor.branch_exists(config, rdir):
                 # create branch
-                if self.verbose:
+                if config.verbose:
                     print(f"Creating new branch {config.feedback_branch}")
                 Popen(["git", "checkout", "-b", config.feedback_branch],
                       cwd=rdir).wait()
@@ -297,16 +241,17 @@ class Infrastructor(object):
                 Popen(["git", "checkout", config.feedback_branch],
                       cwd=rdir).wait()
             # add any new files
-            if self.verbose:
+            if config.verbose:
                 print(f"Adding any new files in {rdir}")
             Popen(["git", "add", "*"], cwd=rdir).wait()  # note: blocking
             # commit
-            if self.verbose:
+            if config.verbose:
                 print("Committing feedback for " + rdir)
             Popen(["git", "commit", "-am", "TA feedback"],
                   cwd=rdir).wait()  # note: blocking
 
-    def issue_pull_request(self, config: Config, reponame: str,
+    @staticmethod
+    def issue_pull_request(config: Config, reponame: str,
                            org: Organization) -> int:
         """Push local feedback branch to remote and issue pull request to the
         default branch for the specified repo
@@ -343,7 +288,7 @@ class Infrastructor(object):
                   f"remote repository.")
             return errno.EEXIST
 
-        if self.verbose:
+        if config.verbose:
             print(f"Pushing branch {config.feedback_branch} to origin.")
 
         #### Lida: needed to edit since reponame contains the relative path, not just the name ####
@@ -353,7 +298,7 @@ class Infrastructor(object):
               cwd=rdir).wait()
 
         # create pull request
-        if self.verbose:
+        if config.verbose:
             print(f"Issuing pull request from branch '{config.feedback_branch}"
                   f"' to branch '{config.default_branch}' in {repo}.")
 
