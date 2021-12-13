@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-
+import argparse
 import os.path
 import sys
 from typing import Tuple, Sequence
@@ -8,27 +8,27 @@ from github import Github
 from github import GithubException
 
 from Infrastructor import Infrastructor
+from config import Config
+from utils import self_check
 
 
 class CannotAddUserToRepo(Exception):
     pass
 
 
-def usage(pname: str) -> None:
-    print(f"Usage: {pname} <github username> <github password> "
-          f"<json config file>")
-
-
-def config(args: Sequence[str]) -> Tuple[str, str, str]:
-    if len(args) != 4:
-        pname = os.path.basename(args[0])
-        usage(pname)
-        sys.exit(1)
-    return args[1], args[2], args[3]
-
-
 def main() -> None:
-    (user, password, conf_file) = config(sys.argv)
+    parser = argparse.ArgumentParser()
+    parser.add_argument("user", type=str,
+                        help="github username")
+    parser.add_argument("password", type=str,
+                        help="github password")
+    parser.add_argument('config', type=str,
+                        help='config file for the lab')
+    parser.add_argument('-v', '--verbose',
+                        action='store_true',
+                        help='enable verbose output')
+
+    args = parser.parse_args()
 
     # Read in json config (generated with generate_config.py)
     # with open(conf_file, 'r') as f:
@@ -38,12 +38,12 @@ def main() -> None:
     # seed = Config.java_string_hashcode(conf.assignment_name)
     # random.seed(seed)
 
-    infra = Infrastructor([sys.argv[0], conf_file])
-    conf = infra.config
-    conf.pretty_print(conf)
+    self_check()
+    conf = Config(args.config, args.verbose)
+    conf.pretty_print()
 
     # connect to github
-    g = Github(user, password)
+    g = Github(args.user, args.password)
     # guser = g.get_user()
     org = g.get_organization("williams-cs")
 

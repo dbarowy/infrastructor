@@ -1,30 +1,24 @@
 #!/usr/bin/env python
 
 import json
-import os.path
 import random
-import sys
-from typing import Sequence, Tuple, List, Dict
+from typing import List, Dict
+
+import argparse
 
 from utils import group2repo, java_string_hashcode
 
 
-def usage(pname: str) -> None:
-    print(f"Usage: {pname} <student name file> <base config template>")
-    print("\t>> prints the contents of a config file to standard out.")
-
-
-def config(args: Sequence[str]) -> Tuple[str, str]:
-    if len(args) != 3:
-        pname = os.path.basename(args[0])
-        usage(pname)
-        sys.exit(1)
-    return args[1], args[2]
-
-
 def main() -> None:
-    (sfile, base_config) = config(sys.argv)
-    with open(base_config, 'r') as f:
+    parser = argparse.ArgumentParser(
+        description="prints the contents of a config file to standard out.")
+    parser.add_argument("sfile", type=str,
+                        help="student name file")
+    parser.add_argument("base_config", type=str,
+                        help="base config template")
+
+    args = parser.parse_args()
+    with open(args.base_config, 'r') as f:
         conf = json.load(f)
 
     # seed RNG based on assignment name
@@ -33,7 +27,7 @@ def main() -> None:
 
     # read student names from input file
     groups: List[List[str]] = []
-    f = open(sfile)
+    f = open(args.sfile)
     for line in f:
         group = line.rstrip().split(",")
         groups.append(group)

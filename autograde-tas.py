@@ -1,11 +1,12 @@
 #!/usr/bin/env python
 
-import argparse
 import os
 import subprocess
-import sys
 
-from Infrastructor import Infrastructor
+import argparse
+
+from config import Config
+from utils import self_check
 
 
 def dump_file(fname: str) -> None:
@@ -32,8 +33,8 @@ def main() -> None:
 
     args = parser.parse_args()
 
-    infra = Infrastructor([sys.argv[0], args.config])
-    conf = infra.config
+    self_check()
+    conf = Config(args.config, args.verbose)
 
     # basepath = conf.ta_path
     for repo in conf.repositories:

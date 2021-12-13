@@ -30,6 +30,9 @@ def java_string_hashcode(s: str) -> int:
 
 
 def self_check() -> None:
+    """
+    Checks if `rsync` and `git` are in the PATH
+    """
     if spawn.find_executable("rsync") is None:
         print("ERROR: Cannot find rsync.", file=sys.stderr)
         sys.exit(1)

@@ -1,33 +1,32 @@
 #!/usr/bin/env python
 
-import sys
-from typing import Sequence, Tuple
-
+import argparse
 from github import Github
 
 from Infrastructor import Infrastructor
-
-
-def usage(pname: str) -> None:
-    print(f"Usage: {pname} <github username> <github password> <config.json>")
-
-
-def parse_args(args: Sequence[str]) -> Tuple[str, str, str]:
-    if len(args) != 4:
-        usage(args[0])
-        sys.exit(1)
-    else:
-        return args[1], args[2], args[3]
+from config import Config
+from utils import self_check
 
 
 def main() -> None:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("user", type=str,
+                        help="github username")
+    parser.add_argument("password", type=str,
+                        help="github password")
+    parser.add_argument('config', type=str,
+                        help='config file for the lab')
+    parser.add_argument('-v', '--verbose',
+                        action='store_true',
+                        help='enable verbose output')
+
+    args = parser.parse_args()
     # get config
-    user, passwd, cfile = parse_args(sys.argv)
-    infra = Infrastructor([sys.argv[0], cfile])
-    conf = infra.config
+    self_check()
+    conf = Config(args.config, args.verbose)
 
     # init Github SDK
-    g = Github(user, passwd)
+    g = Github(args.user, args.password)
     # guser = g.get_user()
     org = g.get_organization("williams-cs")
 
@@ -36,12 +35,12 @@ def main() -> None:
     for repo in conf.repositories:
         # get submissions dir path for repo
         rdir = conf.pull_path(basepath, repo, False, conf.anonymize_sub_path)
-        if not infra.branch_exists(conf, rdir):
+        if not Infrastructor.branch_exists(conf, rdir):
             print(f"No feedback branch for {rdir}")
             continue
         # issue pull request for given repo
         print(f"issuing pull request for {rdir}")
-        infra.issue_pull_request(conf, rdir, org)
+        Infrastructor.issue_pull_request(conf, rdir, org)
 
 
 if __name__ == "__main__":
