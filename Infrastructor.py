@@ -1,11 +1,14 @@
 import errno
+import json
 import os.path
 import sys
 from subprocess import call, Popen, PIPE
-from typing import Dict, TypeVar
+from typing import Dict, TypeVar, Sequence
 
 import argparse
+import requests
 from github.Organization import Organization
+from requests.auth import AuthBase
 
 from config import Config
 
@@ -122,6 +125,37 @@ class Infrastructor(object):
                   cwd=config.starter_repo).wait()
             Popen(["git", "push", repo, config.default_branch],
                   cwd=config.starter_repo).wait()
+
+    @staticmethod
+    def initialize_attempt_counter(configs: Sequence[Config], server_url: str,
+                                   auth: AuthBase) -> None:
+        """Passes a list of Infrastructor configs to attempt server
+
+        so the server can parse the list configs and fill the database with
+        corresponding lab assignments & students
+
+        :param configs: a list Config objects
+        :param server_url: the full URI for attemp server initialization API
+        :param auth: Python request Authentication information
+        """
+        # Note that the Content-type header must be specified,
+        # otherwise the server will reply with a 500 error
+        headers = {'Content-type': 'application/json; charset=utf-8'}
+        config_list = [json.dumps(c.jsondict) for c in configs]
+
+        r = requests.post(
+            server_url,
+            data="[" + ",".join(config_list) + "]",
+            headers=headers,
+            auth=auth
+        )
+
+        if r.status_code == 200:
+            print(r.json())
+        else:
+            print(r.status_code)
+            print(r.headers)
+            print(r.text)
 
     @staticmethod
     def copy_to_ta_folders(config: Config, ta_home: str, ta_dirname: str,

@@ -68,6 +68,8 @@ class Config(object):
         with open(json_conf_file, 'r') as f:
             # read config
             conf = json.loads(f.read())
+            self.jsondict = conf
+            "A dictionary object for parsed configuration file"
 
         # declare/init fields
 
