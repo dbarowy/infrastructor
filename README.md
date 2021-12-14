@@ -32,7 +32,7 @@ to isolate the Python libraries necessary to use the GitHub software.
 
   * install necessary libraries
   ```
-  pip install PyGithub
+  pip install -r requirements.txt
   ```
 
 At this point, you can run any of the python scripts you would like.
@@ -67,7 +67,7 @@ The complete set of configuration options are as follows:
 |`"ta_path"`|`string`|`"/path/to/TAs"`|Path to TA staging area where anonymized student submissions are copied.|
 |`"default_branch"`|`string`|`"main"`| Branch that student commits to. Defaults to `main` if not specified.|
 |`"feedback_branch"`|`string`|`"assignment-feedback"`|Branch to commit TA/instructor feedback on. Pull requests are issued from this branch.|
-|`"starter_repo"`|`string`|`"/home/example/starter-repo"`|Path to starter repo.  Starter code is distributed by setting each student repository as a "remote" for the starter repository and then `push`ing.  Student repositories _must_ be empty (i.e., no `master` branch) otherwise `push` will fail.|
+|`"starter_repo"`|`string`|`"/home/example/starter-repo"`|Path to starter repo.  Starter code is distributed by setting each student repository as a "remote" for the starter repository and then `push`ing.  Student repositories _must_ be empty (i.e., no `main` branch) otherwise `push` will fail.|
 |`"github_org"`|`string`|`"williams-cs"`|Name of the GitHub organization to use.|
 |`"TAs"`|`string[]`|`[ "ta1", "ta2", "ta3" ]`|TA names to use as folder names.  These need not be tied to actual account names.  Names are appended to the `ta_path` and files are copied to the resulting path.|
 |`"repository_map"`|`dict<string,string>`|`{"dbarowy": "cs999_hw1_dbarowy", "wjannen": "cs999_hw1_wjannen"}`|Dictionary mapping student GitHub usernames to repositories in the `github_org` organization. Should not be created manually; instead paste in output after running `populate-github` command.|
