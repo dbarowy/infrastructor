@@ -1,0 +1,22 @@
+# A list of dependencies for this project.
+# Install with `pip install -r requirements.txt`
+## The top-level dependencies
+mypy==0.910 # for static type checking
+PyGithub==1.55
+requests==2.26.0 # also a dependency for PyGithub
+types-requests==2.26.1 # type stub for requests library
+## Their dependencies are listed below for debug purposes.
+# certifi==2021.10.8 # Installed as dependency for requests
+# cffi==1.15.0 # Installed as dependency for PyNaCl
+# charset-normalizer==2.0.9 # Installed as dependency for requests
+# Deprecated==1.2.13 # Installed as dependency for PyGithub
+# idna==3.3 # Installed as dependency for requests
+# mypy-extensions==0.4.3 # Installed as dependency for mypy
+# pycparser==2.21 # Installed as dependency for cffi
+# PyJWT==2.3.0 # Installed as dependency for PyGithub
+# PyNaCl==1.4.0 # Installed as dependency for PyGithub
+# six==1.16.0 # Installed as dependency for PyNaCl
+# toml==0.10.2 # Installed as dependency for mypy
+# typing-extensions==4.0.1 # Installed as dependency for mypy
+# urllib3==1.26.7 # Installed as dependency for requests
+# wrapt==1.13.3 # Installed as dependency for Deprecated

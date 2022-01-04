@@ -1,42 +1,43 @@
 #!/usr/bin/env python
-
-import sys
-import os.path
 import time
-from typing import Sequence, Tuple
 
-from config import Config
+import argparse
 from github import Github
 from github import GithubException
+
+from Infrastructor import Infrastructor
+from config import Config
+from utils import self_check
+
 
 class CannotAddUserToRepo(Exception):
     pass
 
-def usage(pname: str) -> None:
-    print(f"Usage: {pname} <github username> <github password> "
-          f"<json config file>")
-
-
-def config(args: Sequence[str]) -> Tuple[str, str, str]:
-    if len(args) != 4:
-        pname = os.path.basename(args[0])
-        usage(pname)
-        sys.exit(1)
-    return args[1], args[2], args[3]
-
 
 def main() -> None:
-    (user, password, conf_file) = config(sys.argv)
+    parser = argparse.ArgumentParser()
+    parser.add_argument("user", type=str,
+                        help="github username")
+    parser.add_argument("password", type=str,
+                        help="github password")
+    parser.add_argument('config', type=str,
+                        help='config file for the lab')
+    parser.add_argument('-v', '--verbose',
+                        action='store_true',
+                        help='enable verbose output')
 
-    conf = Config([sys.argv[0], conf_file])
+    args = parser.parse_args()
+
+    self_check()
+    conf = Config(args.config, args.verbose)
     conf.pretty_print()
 
     # connect to github
-    g = Github(user, password)
+    g = Github(args.user, args.password)
     org = g.get_organization("williams-cs")
 
     for repo_name, group in conf.repo2group.items():
-        repo = None
+        # repo = None
         try:
             # check to see if repository already exists
             repo = org.get_repo(repo_name)

@@ -2,19 +2,25 @@
 
 import sys
 
+from Infrastructor import Infrastructor
 from config import Config
+from utils import self_check
 
 
 def main() -> None:
-    # get config
-    conf = Config(sys.argv)
+    args = Infrastructor.default_parser.parse_args()
 
-    # copy every commented assignment from TA location to submissions folder
-    conf.copy_from_ta_folders(conf.ta_path, conf.assignment_name,
-                              conf.submission_path)
+    # get config
+    self_check()
+    conf = Config(args.config, args.verbose)
+
+
+# copy every commented assignment from TA location to submissions folder
+    Infrastructor.copy_from_ta_folders(conf, conf.ta_path, conf.assignment_name,
+                                       conf.submission_path)
 
     # commit changes
-    conf.commit_changes(conf.submission_path)
+    Infrastructor.commit_changes(conf, conf.submission_path)
 
 
 if __name__ == "__main__":

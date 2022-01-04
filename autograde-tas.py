@@ -1,11 +1,12 @@
 #!/usr/bin/env python
 
-import argparse
 import os
 import subprocess
-import sys
+
+import argparse
 
 from config import Config
+from utils import self_check
 
 
 def dump_file(fname: str) -> None:
@@ -32,10 +33,11 @@ def main() -> None:
 
     args = parser.parse_args()
 
-    conf = Config([sys.argv[0], args.config])
+    self_check()
+    conf = Config(args.config, args.verbose)
 
-    basepath = conf.ta_path
-    for repo in conf.repositories():
+    # basepath = conf.ta_path
+    for repo in conf.repositories:
         ta_dir = conf.TA_target(conf.ta_path, conf.assignment_name, repo)
         print(f"{repo}: {ta_dir}")
         with subprocess.Popen(args=args.command.split(),

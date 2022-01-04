@@ -1,32 +1,26 @@
 #!/usr/bin/env python
-
-import sys
-from typing import Tuple, Sequence
+import argparse
 
 from github import Github
 
 
-def usage(pname: str) -> None:
-    print(f"Usage: {pname} <github username> <github password> "
-          f"<org name> <student_file>")
-
-
-def parse_args(args: Sequence[str]) -> Tuple[str, str, str, str]:
-    if len(args) != 5:
-        usage(args[0])
-        sys.exit(1)
-    else:
-        return args[1], args[2], args[3], args[4]
-
-
 def main() -> None:
     # get config
-    user, passwd, orgname, sfile = parse_args(sys.argv)
+    parser = argparse.ArgumentParser()
+    parser.add_argument("user", type=str,
+                        help="github username")
+    parser.add_argument("password", type=str,
+                        help="github password")
+    parser.add_argument('orgname', type=str,
+                        help='org name')
+    parser.add_argument('sfile', type=str,
+                        help='student file')
+    args = parser.parse_args()
 
     # init Github SDK
-    g = Github(user, passwd)
+    g = Github(args.user, args.password)
 
-    with open(sfile, 'r') as fin:
+    with open(args.sfile, 'r') as fin:
         students = [line.strip() for line in fin]
 
     non_github = []
@@ -48,7 +42,7 @@ def main() -> None:
 
     print("Not in github:")
     print(non_github)
-    print(f"Not in {orgname}:")
+    print(f"Not in {args.orgname}:")
     print(non_org)
 
 
