@@ -6,6 +6,7 @@ from github import Github
 from Infrastructor import Infrastructor
 from config import Config
 from utils import self_check
+from time import sleep
 
 
 def main() -> None:
@@ -41,6 +42,9 @@ def main() -> None:
         # issue pull request for given repo
         print(f"issuing pull request for {rdir}")
         Infrastructor.issue_pull_request(conf, rdir, org)
+        
+        # Github aggressively rate-limits; sleep to avoid pain
+        sleep(1)
 
 
 if __name__ == "__main__":
