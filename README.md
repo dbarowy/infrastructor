@@ -116,7 +116,7 @@ This step locally clones student work to the `archive_path`, `submission_path`, 
   
   After running this command, you should notify your TAs that submissions are available for them to review.  TAs then edit files in their folders, adding feedback as necessary.  We typically instruct TAs to create a `grade.txt` file for grading feedback and comments, but TAs may also modify files as needed (e.g., to insert comments inline).  Many TAs find it helpful if you generate a `grade.txt` template for them to use, which also ensures some uniformity in grading.
   
-  `get-submissions.py` prints out a TA-repository name map that you may wish to store for use in the next step, as the assignment of TAs to repositories is (pseudo)random (and deterministic, using a hash of the `assingment_name` as a random seed).
+  `get-submissions.py` prints out a TA-repository name map that you may wish to store for use in the next step, as the assignment of TAs to repositories is (pseudo)random (and deterministic, using a hash of the `assignment_name` as a random seed).
 
 ### Step 5. Collect TA Feedback
 
