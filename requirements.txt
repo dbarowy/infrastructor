@@ -1,10 +1,10 @@
 # A list of dependencies for this project.
 # Install with `pip install -r requirements.txt`
 ## The top-level dependencies
-mypy==0.910 # for static type checking
-PyGithub==1.55
-requests==2.26.0 # also a dependency for PyGithub
-types-requests==2.26.1 # type stub for requests library
+mypy==0.991 # for static type checking
+PyGithub==1.57
+requests==2.28.1 # also a dependency for PyGithub
+types-requests==2.28.11.5 # type stub for requests library
 ## Their dependencies are listed below for debug purposes.
 # certifi==2021.10.8 # Installed as dependency for requests
 # cffi==1.15.0 # Installed as dependency for PyNaCl
